@@ -20,6 +20,7 @@ Table of Contents
 
 * [Installing the Driver](#installing-the-driver)
 * [Initializing a Driver Instance](#initializing-a-driver-instance)
+* [Environment Variables](#environment-variables)
 * [Key/Value Secret Engine Config](#key-value-secret-engine-config)
 * [SSL Config](#ssl-config)
     * [General Options](#general-options)
@@ -82,11 +83,13 @@ final VaultConfig config =
     new VaultConfig()
         .address("http://127.0.0.1:8200")               // Defaults to "VAULT_ADDR" environment variable
         .token("3c9fd6be-7bc2-9d1f-6fb3-cd746c0fc4e8")  // Defaults to "VAULT_TOKEN" environment variable
-        .openTimeout(5)                                 // Defaults to "VAULT_OPEN_TIMEOUT" environment variable
-        .readTimeout(30)                                // Defaults to "VAULT_READ_TIMEOUT" environment variable
+        .openTimeout(5)                                 // Defaults to "VAULT_OPEN_TIMEOUT" environment variable (0 = no timeout)
+        .readTimeout(30)                                // Defaults to "VAULT_READ_TIMEOUT" environment variable (0 = no timeout)
         .sslConfig(new SslConfig().build())             // See "SSL Config" section below
         .build();
 ```
+
+See [Environment Variables](#environment-variables) for how these variables are read.
 
 Once you have initialized a `VaultConfig` object, you can use it to construct an instance of
 the `Vault` primary driver class:
@@ -94,6 +97,42 @@ the `Vault` primary driver class:
 ```
 final Vault vault = Vault.create(config);
 ```
+
+Environment Variables
+---------------------
+Any setting that is not set in code is read from an environment variable when `build()` is called.
+A value set in code always takes priority, and the matching environment variable is then not read
+at all.
+
+| Variable             | Setting                    | Notes                                                                                                                         |
+|----------------------|----------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `VAULT_ADDR`         | `VaultConfig.address`      | Required if no address is set in code, otherwise `build()` fails with "No address is set".                                     |
+| `VAULT_TOKEN`        | `VaultConfig.token`        | If unset, the token is read from the `.vault-token` file in the user's home directory, if present.                             |
+| `VAULT_OPEN_TIMEOUT` | `VaultConfig.openTimeout`  | Seconds to wait for a connection. `0` means no timeout.                                                                        |
+| `VAULT_READ_TIMEOUT` | `VaultConfig.readTimeout`  | Seconds to wait for a response. `0` means no timeout.                                                                          |
+| `VAULT_SSL_VERIFY`   | `SslConfig.verify`         | Whether to verify the Vault server's SSL certificate. Only `false` disables verification (see below).                          |
+| `VAULT_SSL_CERT`     | `SslConfig.pemFile`        | Path to a PEM file with the Vault server's certificate. Only used if verification is enabled and no certificate is set in code. |
+
+All values are handled the same way:
+
+* Surrounding whitespace is removed, so a trailing newline (e.g. from a mounted Kubernetes secret)
+  is harmless.
+* An empty or blank value is treated as unset. This also applies to the `.vault-token` file.
+* An invalid timeout (not an integer, or negative) is ignored, and a warning is logged. A negative
+  timeout set in code makes `build()` throw a `VaultException`.
+
+`VAULT_SSL_VERIFY` fails closed, so that a typo can never disable SSL verification by accident:
+
+* `false` (in any case) disables verification.
+* `true`, `t`, `1`, `y`, `yes` and `on` (in any case), or an empty value, enable it.
+* Any other value, including `0`, `no` and `off`, also enables it, and a warning is logged.
+
+To disable loading from environment variables, or to read the values from another source, pass
+your own `EnvironmentLoader` implementation to `VaultConfig.environmentLoader()`. Whitespace removal
+and empty values are still handled as above for the values it returns, while the `.vault-token`
+fallback is part of the default `EnvironmentLoader` only. An `SslConfig` passed to `VaultConfig`
+without calling its own `build()` is built by `VaultConfig.build()`, using the same
+`EnvironmentLoader`.
 
 Key Value Secret Engine Config
 ------------------------------
@@ -163,7 +202,9 @@ own `SslConfig` class. This class likewise using a builder pattern.
 .verify(false)    // Defaults to "VAULT_SSL_VERIFY" environment variable (or else "true")
 ```
 
-To disable SSL certificate verification altogether, set `sslVerify(false)`. YOU SHOULD NOT DO THIS
+To disable SSL certificate verification altogether, set `verify(false)`, or set the
+`VAULT_SSL_VERIFY` environment variable to `false` (see
+[Environment Variables](#environment-variables)). YOU SHOULD NOT DO THIS
 IS A REAL PRODUCTION SETTING!  However, it can be useful in a development or testing server context.
 If this value is explicitly set to `false`, then all other SSL config is basically unused.
 
@@ -218,7 +259,7 @@ the `SslConfig` Javadocs for more detail).
 
 If SSL verification is enabled, no JKS-based config is provided, AND none of these three methods are
 called, then `SslConfig` will by default check for a `VAULT_SSL_CERT` environment variable. If
-that's sets then it will be treated as a filesystem path.
+that's set, then it will be treated as a filesystem path.
 
 To use Vault's TLS Certificate auth backend for SSL client auth, you must provide your client
 certificate and private key, using some pair from the following options:
@@ -302,6 +343,35 @@ and may require modifications in your code to migrate. Changes to the minor vers
 number) should represent non-breaking changes. The third number represents any very minor bugfix
 patches.
 
+* **Unreleased**: This release contains the following updates:
+  * Environment variables: surrounding whitespace is removed, and empty values are treated as unset
+  * `VAULT_SSL_VERIFY` now only disables SSL verification when set to `false`. Previously any value
+    other than `true` disabled it, including `1`, `yes`, typos and empty values. **Values like `0`,
+    `no` or `off` now keep verification enabled: use `false` instead.**
+  * A timeout of `0` means no timeout again, as before 6.0.0. Negative timeouts are rejected
+  * `VAULT_TOKEN` and the `.vault-token` file are no longer read when a token is set in code
+  * An `SslConfig` passed to `VaultConfig` without calling its `build()` is now built by
+    `VaultConfig.build()`, and verifies SSL certificates by default. Previously it silently disabled
+    verification and ignored its certificates
+  * A deserialized `SslConfig` now keeps its settings. Previously it had SSL verification disabled
+  * Each `VaultConfig` now reuses a single HTTP client, so connections are reused between requests
+    instead of a new client being created for every request. `VaultConfig.getHttpClient()` now
+    returns the client in use instead of `null` when none was set
+  * Response bodies are returned exactly as received. Previously non-UTF-8 (e.g. binary) bodies
+    were corrupted
+  * Only transient errors are retried: I/O errors and HTTP 5xx, 408, 412 and 429 responses.
+    **Other 4xx responses (e.g. 400, 403, 404) now fail immediately instead of being retried.** An
+    interrupt while waiting between retries stops retrying
+  * `AuthResponse`, `WrapResponse`, `LookupResponse` and `UnwrapResponse` no longer throw on
+    missing or `null` JSON fields
+  * `Vault.create(config, null)` throws `IllegalArgumentException`, and a `null`
+    `useSecretsEnginePathMap` counts as `false`. When no KV engine version is set, version 2 is used
+    (`Logical.getEngineVersionForSecretPath()` returns `2` instead of `null`)
+  * `VaultConfig.nameSpace()` no longer throws `VaultException`: an empty namespace is rejected by
+    `build()` instead. `VaultConfig.getSecretsEnginePathMap()` returns an unmodifiable map
+  * Warnings are logged with `java.util.logging` instead of being printed to standard error
+  * Build: pinned Maven plugin versions, fixed test reports in the GitHub Actions CI, removed the
+    unused Travis CI configuration
 * **6.2.3**: This release contains the following updates:
   * Improved Java 11 compatibility
   * Fixed integration tests with Vault 2.x
