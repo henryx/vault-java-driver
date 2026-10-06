@@ -449,4 +449,101 @@ public class VaultConfigTests {
         assertEquals("explicit", new String(config.getToken()));
         Assert.assertFalse(loaded.contains("VAULT_TOKEN"));
     }
+
+    /**
+     * An <code>SslConfig</code> that was never built must not disable SSL verification.
+     */
+    @Test
+    public void testUnbuiltSslConfigVerifies() {
+        Assert.assertTrue(new SslConfig().isVerify());
+    }
+
+    /**
+     * An explicit <code>verify()</code> value is honored whether or not <code>build()</code> was
+     * called, and also when set after it.
+     */
+    @Test
+    public void testSslVerifyExplicitValueAlwaysWins() throws VaultException {
+        Assert.assertFalse(new SslConfig().verify(false).isVerify());
+        Assert.assertFalse(new SslConfig().build().verify(false).isVerify());
+
+        final var mock = new MockEnvironmentLoader();
+        mock.override("VAULT_SSL_VERIFY", "false");
+        Assert.assertTrue(new SslConfig().environmentLoader(mock).build().verify(true).isVerify());
+    }
+
+    /**
+     * <code>VaultConfig.build()</code> builds an <code>SslConfig</code> whose own
+     * <code>build()</code> was not called, so a supplied certificate is actually used.
+     */
+    @Test
+    public void testBuildBuildsPassedSslConfig() throws VaultException {
+        final var sslConfig = new SslConfig().pemResource("/cert.pem");
+        Assert.assertNull(sslConfig.getSslContext());
+
+        final var config = new VaultConfig()
+                .environmentLoader(new MockEnvironmentLoader())
+                .address("https://127.0.0.1:8200")
+                .sslConfig(sslConfig)
+                .build();
+        Assert.assertTrue(config.getSslConfig().isVerify());
+        Assert.assertNotNull(sslConfig.getSslContext());
+    }
+
+    /**
+     * A passed <code>SslConfig</code> without its own environment loader uses the one of the
+     * <code>VaultConfig</code>.
+     */
+    @Test
+    public void testBuildPassesEnvironmentLoaderToSslConfig() throws VaultException {
+        final var mock = new MockEnvironmentLoader();
+        mock.override("VAULT_SSL_VERIFY", "false");
+        final var config = new VaultConfig()
+                .environmentLoader(mock)
+                .address("https://127.0.0.1:8200")
+                .sslConfig(new SslConfig())
+                .build();
+        Assert.assertFalse(config.getSslConfig().isVerify());
+    }
+
+    /**
+     * An already built <code>SslConfig</code> is left untouched.
+     */
+    @Test
+    public void testBuildDoesNotRebuildBuiltSslConfig() throws VaultException {
+        final var sslEnv = new MockEnvironmentLoader();
+        sslEnv.override("VAULT_SSL_VERIFY", "false");
+        final var sslConfig = new SslConfig().environmentLoader(sslEnv).build();
+
+        final var vaultEnv = new MockEnvironmentLoader();
+        vaultEnv.override("VAULT_SSL_VERIFY", "true");
+        final var config = new VaultConfig()
+                .environmentLoader(vaultEnv)
+                .address("https://127.0.0.1:8200")
+                .sslConfig(sslConfig)
+                .build();
+        Assert.assertFalse(config.getSslConfig().isVerify());
+
+        final var pemConfig = new SslConfig().pemResource("/cert.pem").build();
+        final var sslContext = pemConfig.getSslContext();
+        new VaultConfig()
+                .environmentLoader(new MockEnvironmentLoader())
+                .address("https://127.0.0.1:8200")
+                .sslConfig(pemConfig)
+                .build();
+        Assert.assertSame(sslContext, pemConfig.getSslContext());
+    }
+
+    /**
+     * An invalid certificate in a passed <code>SslConfig</code> is reported by
+     * <code>VaultConfig.build()</code>.
+     */
+    @Test(expected = VaultException.class)
+    public void testBuildFailsOnInvalidPassedSslConfig() throws VaultException {
+        new VaultConfig()
+                .environmentLoader(new MockEnvironmentLoader())
+                .address("https://127.0.0.1:8200")
+                .sslConfig(new SslConfig().pemUTF8("not a certificate"))
+                .build();
+    }
 }

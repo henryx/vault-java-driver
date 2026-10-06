@@ -52,7 +52,7 @@ public class SslConfig implements Serializable {
     private static final List<String> VERIFY_TRUE_VALUES = List.of("t", "true", "1", "y", "yes", "on");
     private static final Logger LOGGER = Logger.getLogger(SslConfig.class.getCanonicalName());
 
-    private boolean verify;
+    private boolean verify = true;
     private transient SSLContext sslContext;
     private transient KeyStore trustStore;
     private transient KeyStore keyStore;
@@ -62,6 +62,7 @@ public class SslConfig implements Serializable {
     private String clientKeyPemUTF8;
     private Boolean verifyObject;
     private EnvironmentLoader environmentLoader;
+    private boolean built;
 
     /**
      * <p>The code used to load environment variables is encapsulated here, so that a mock version
@@ -518,7 +519,28 @@ public class SslConfig implements Serializable {
             }
         }
         buildSsl();
+        this.built = true;
         return this;
+    }
+
+    /**
+     * Builds this object, unless {@link #build()} was already called. Used by
+     * {@link VaultConfig#build()}, so that a <code>SslConfig</code> passed to it is ready for use
+     * even if its own <code>build()</code> was not called.
+     *
+     * @param defaultEnvironmentLoader The environment loader to use, if none was set on this object
+     * @return This object
+     * @throws VaultException If any problem occurs while building
+     */
+    SslConfig buildIfNeeded(final EnvironmentLoader defaultEnvironmentLoader)
+            throws VaultException {
+        if (built) {
+            return this;
+        }
+        if (this.environmentLoader == null) {
+            this.environmentLoader = defaultEnvironmentLoader;
+        }
+        return build();
     }
 
     /**
@@ -547,7 +569,20 @@ public class SslConfig implements Serializable {
         return true;
     }
 
+    /**
+     * <p>Whether HTTPS connections should verify the Vault server's SSL certificate.</p>
+     *
+     * <p>A value set with {@link #verify(Boolean)} always takes priority, even if it was set after
+     * {@link #build()}. Otherwise this is the value resolved by {@link #build()} (from the
+     * <code>VAULT_SSL_VERIFY</code> environment variable), or <code>true</code> if
+     * {@link #build()} was not called.</p>
+     *
+     * @return <code>false</code> only if verification was explicitly disabled
+     */
     public boolean isVerify() {
+        if (verifyObject != null) {
+            return verifyObject;
+        }
         return verify;
     }
 

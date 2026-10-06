@@ -193,6 +193,10 @@ public class VaultConfig implements Serializable {
      * <code>SslConfig</code> object with {@link SslConfig#verify(Boolean)} explicitly set to
      * <code>false</code>.</p>
      *
+     * <p>If {@link SslConfig#build()} was not called on the passed object, {@link #build()} calls
+     * it, using this object's environment loader unless the <code>SslConfig</code> has its
+     * own.</p>
+     *
      * @param sslConfig SSL-related configuration options
      * @return This object, with SSL configuration options populated, ready for additional
      * builder-pattern method calls or else finalization with the build() method
@@ -389,8 +393,9 @@ public class VaultConfig implements Serializable {
             throw new VaultException("The read timeout cannot be negative: " + this.readTimeout);
         }
         if (this.sslConfig == null) {
-            this.sslConfig = new SslConfig().environmentLoader(this.environmentLoader).build();
+            this.sslConfig = new SslConfig();
         }
+        this.sslConfig.buildIfNeeded(this.environmentLoader);
         this.defaultHttpClient = null;
         return this;
     }
