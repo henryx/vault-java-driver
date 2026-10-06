@@ -8,10 +8,18 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
@@ -253,5 +261,91 @@ public class VaultConfigTests {
         var vaultConfig = new VaultConfig().nameSpace("namespace").address("address")
                 .build();
         Assert.assertEquals(vaultConfig.getNameSpace(), "namespace");
+    }
+
+    private final List<LogRecord> sslConfigWarnings = new ArrayList<>();
+
+    private final Handler sslConfigWarningsHandler = new Handler() {
+        @Override
+        public void publish(final LogRecord record) {
+            if (record.getLevel() == Level.WARNING) {
+                sslConfigWarnings.add(record);
+            }
+        }
+
+        @Override
+        public void flush() {
+        }
+
+        @Override
+        public void close() {
+        }
+    };
+
+    @Before
+    public void captureSslConfigWarnings() {
+        Logger.getLogger(SslConfig.class.getCanonicalName()).addHandler(sslConfigWarningsHandler);
+    }
+
+    @After
+    public void releaseSslConfigWarnings() {
+        Logger.getLogger(SslConfig.class.getCanonicalName())
+                .removeHandler(sslConfigWarningsHandler);
+    }
+
+    private boolean sslVerifyFromEnv(final String value) throws VaultException {
+        final var mock = new MockEnvironmentLoader();
+        mock.override("VAULT_ADDR", "http://127.0.0.1:8200");
+        mock.override("VAULT_SSL_VERIFY", value);
+        return new VaultConfig().environmentLoader(mock).build().getSslConfig().isVerify();
+    }
+
+    /**
+     * Only an explicit <code>false</code> may disable SSL verification.
+     */
+    @Test
+    public void testConfigBuilder_LoadFromEnv_SslVerifyFalse() throws VaultException {
+        for (final String value : new String[]{"false", "FALSE", " false\n"}) {
+            Assert.assertFalse("\"" + value + "\"", sslVerifyFromEnv(value));
+        }
+        Assert.assertEquals(List.of(), sslConfigWarnings);
+    }
+
+    /**
+     * The recognized true values, unset and empty values enable SSL verification without warnings.
+     */
+    @Test
+    public void testConfigBuilder_LoadFromEnv_SslVerifyTrue() throws VaultException {
+        for (final String value : new String[]{"t", "T", "true", "TRUE", " true", "1", "y", "Y", "yes", "YES", "on", "On\n", ""}) {
+            Assert.assertTrue("\"" + value + "\"", sslVerifyFromEnv(value));
+        }
+        Assert.assertTrue(sslVerifyFromEnv(null));
+        Assert.assertEquals(List.of(), sslConfigWarnings);
+    }
+
+    /**
+     * Any other value, including typos and other "false-like" values, keeps SSL verification
+     * enabled, and logs a warning.
+     */
+    @Test
+    public void testConfigBuilder_LoadFromEnv_SslVerifyFailsClosed() throws VaultException {
+        final String[] values = {"0", "f", "n", "no", "off", "ture", "disabled"};
+        for (final String value : values) {
+            Assert.assertTrue("\"" + value + "\"", sslVerifyFromEnv(value));
+        }
+        Assert.assertEquals(values.length, sslConfigWarnings.size());
+    }
+
+    /**
+     * An explicit <code>verify()</code> setting takes priority over the environment variable.
+     */
+    @Test
+    public void testConfigBuilder_SslVerifyExplicitOverridesEnv() throws VaultException {
+        final var mock = new MockEnvironmentLoader();
+        mock.override("VAULT_SSL_VERIFY", "false");
+        Assert.assertTrue(new SslConfig().environmentLoader(mock).verify(true).build().isVerify());
+
+        mock.override("VAULT_SSL_VERIFY", "true");
+        Assert.assertFalse(new SslConfig().environmentLoader(mock).verify(false).build().isVerify());
     }
 }

@@ -27,6 +27,9 @@ import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
+import java.util.List;
+import java.util.Locale;
+import java.util.logging.Logger;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -46,6 +49,8 @@ public class SslConfig implements Serializable {
 
     private static final String VAULT_SSL_VERIFY = "VAULT_SSL_VERIFY";
     private static final String VAULT_SSL_CERT = "VAULT_SSL_CERT";
+    private static final List<String> VERIFY_TRUE_VALUES = List.of("t", "true", "1", "y", "yes", "on");
+    private static final Logger LOGGER = Logger.getLogger(SslConfig.class.getCanonicalName());
 
     private boolean verify;
     private transient SSLContext sslContext;
@@ -90,7 +95,8 @@ public class SslConfig implements Serializable {
      *
      * <p>If no verify is explicitly set, either by this method in a builder pattern approach or
      * else by one of the convenience constructors, then <code>SslConfig</code> will look to the
-     * <code>VAULT_SSL_VERIFY</code> environment variable.</p>
+     * <code>VAULT_SSL_VERIFY</code> environment variable. Only the value <code>false</code>
+     * (case-insensitive) disables verification; any other value keeps it enabled.</p>
      *
      * @param verify Whether or not to verify the SSL certificate used by Vault with HTTPS
      * connections.  Default is <code>true</code>.
@@ -495,12 +501,10 @@ public class SslConfig implements Serializable {
         if (this.environmentLoader == null) {
             this.environmentLoader = new EnvironmentLoader();
         }
-        if (this.verifyObject == null && environmentLoader.loadVariable(VAULT_SSL_VERIFY) != null) {
-            this.verify = Boolean.parseBoolean(environmentLoader.loadVariable(VAULT_SSL_VERIFY));
-        } else if (this.verifyObject != null) {
+        if (this.verifyObject != null) {
             this.verify = verifyObject;
         } else {
-            this.verify = true;
+            this.verify = parseVerify(environmentLoader.loadVariable(VAULT_SSL_VERIFY));
         }
         if (this.verify && this.pemUTF8 == null
                 && environmentLoader.loadVariable(VAULT_SSL_CERT) != null) {
@@ -513,6 +517,32 @@ public class SslConfig implements Serializable {
         }
         buildSsl();
         return this;
+    }
+
+    /**
+     * Parses the <code>VAULT_SSL_VERIFY</code> environment variable, ignoring case and surrounding
+     * whitespace. Verification is only disabled by an explicit <code>false</code>, so that a typo
+     * or an unexpected value can never silently turn it off. <code>t</code>, <code>true</code>,
+     * <code>1</code>, <code>y</code>, <code>yes</code> and <code>on</code> enable it; any other
+     * value also enables it, with a warning.
+     *
+     * @param value The variable value, or <code>null</code> if unset
+     * @return <code>false</code> only if the value is <code>false</code>
+     */
+    static boolean parseVerify(final String value) {
+        if (value == null || value.isBlank()) {
+            return true;
+        }
+        final String normalized = value.strip().toLowerCase(Locale.ROOT);
+        if (normalized.equals("false")) {
+            return false;
+        }
+        if (!VERIFY_TRUE_VALUES.contains(normalized)) {
+            LOGGER.warning(String.format(
+                    "The %s environment variable contains value \"%s\", which is neither \"false\" nor one of %s. SSL verification stays enabled.",
+                    VAULT_SSL_VERIFY, value, VERIFY_TRUE_VALUES));
+        }
+        return true;
     }
 
     public boolean isVerify() {
