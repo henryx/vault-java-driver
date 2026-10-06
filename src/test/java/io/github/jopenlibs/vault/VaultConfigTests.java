@@ -424,4 +424,29 @@ public class VaultConfigTests {
         assertEquals(Integer.valueOf(0), config.getOpenTimeout());
         Assert.assertNull(config.getReadTimeout());
     }
+
+    /**
+     * <code>VAULT_TOKEN</code> is not looked up when a token was set explicitly, since the default
+     * loader may read the <code>~/.vault-token</code> file for it.
+     */
+    @Test
+    public void testConfigBuilder_ExplicitTokenSkipsEnvLookup() throws VaultException {
+        final List<String> loaded = new ArrayList<>();
+        final MockEnvironmentLoader mock = new MockEnvironmentLoader() {
+            @Override
+            public String loadVariable(final String name) {
+                loaded.add(name);
+                return super.loadVariable(name);
+            }
+        };
+        mock.override("VAULT_TOKEN", "from-env");
+
+        final var config = new VaultConfig()
+                .environmentLoader(mock)
+                .address("http://127.0.0.1:8200")
+                .token("explicit")
+                .build();
+        assertEquals("explicit", new String(config.getToken()));
+        Assert.assertFalse(loaded.contains("VAULT_TOKEN"));
+    }
 }

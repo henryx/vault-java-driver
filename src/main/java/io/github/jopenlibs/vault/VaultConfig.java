@@ -369,9 +369,12 @@ public class VaultConfig implements Serializable {
                 throw new VaultException("No address is set");
             }
         }
-        String envVaultToken = EnvironmentLoader.load(environmentLoader, VAULT_TOKEN);
-        if (this.token == null && envVaultToken != null) {
-            this.token = envVaultToken.toCharArray();
+        if (this.token == null) {
+            // Only looked up when needed: the default loader may read ~/.vault-token from disk
+            final String envVaultToken = EnvironmentLoader.load(environmentLoader, VAULT_TOKEN);
+            if (envVaultToken != null) {
+                this.token = envVaultToken.toCharArray();
+            }
         }
         if (this.openTimeout == null) {
             this.openTimeout = loadTimeoutVariable(VAULT_OPEN_TIMEOUT);
