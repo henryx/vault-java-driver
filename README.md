@@ -15,9 +15,6 @@ most commonly used Java clients for Hashicorp, but has had no activity or releas
 December 2019. The project is not
 maintaining [by author](https://github.com/BetterCloud/vault-java-driver/pull/245#issuecomment-954066376).
 
-This Change
------------
-
 Table of Contents
 -----------------
 
