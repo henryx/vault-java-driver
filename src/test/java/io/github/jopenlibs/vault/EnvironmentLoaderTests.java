@@ -46,6 +46,14 @@ public class EnvironmentLoaderTests {
     }
 
     @Test
+    public void testValueIsTrimmed() {
+        env.put("VAULT_ADDR", " http://127.0.0.1:8200\n");
+        assertEquals("http://127.0.0.1:8200", loader.loadVariable("VAULT_ADDR"));
+        env.put("VAULT_TOKEN", "from-env\r\n");
+        assertEquals("from-env", loader.loadVariable("VAULT_TOKEN"));
+    }
+
+    @Test
     public void testUnsetEmptyAndBlankValuesAreNull() {
         assertNull(loader.loadVariable("VAULT_ADDR"));
         env.put("VAULT_ADDR", "");

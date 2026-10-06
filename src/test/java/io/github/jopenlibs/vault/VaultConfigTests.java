@@ -379,4 +379,33 @@ public class VaultConfigTests {
         Assert.assertNull(config.getReadTimeout());
         Assert.assertNull(config.getSslConfig().getSslContext());
     }
+
+    /**
+     * Surrounding whitespace (e.g. a trailing newline from a mounted secret) is removed from
+     * values of any environment loader, even a custom one.
+     */
+    @Test
+    public void testConfigBuilder_LoadFromEnv_ValuesAreTrimmed() throws IOException, VaultException {
+        final var pemFile = Files.createTempFile("cert", ".pem");
+        try (InputStream input = this.getClass().getResourceAsStream("/cert.pem")) {
+            Files.write(pemFile, input.readAllBytes());
+        }
+        try {
+            final var mock = new MockEnvironmentLoader();
+            mock.override("VAULT_ADDR", " https://127.0.0.1:8200\n");
+            mock.override("VAULT_TOKEN", "s.token\n");
+            mock.override("VAULT_OPEN_TIMEOUT", " 5");
+            mock.override("VAULT_READ_TIMEOUT", "30\n");
+            mock.override("VAULT_SSL_CERT", pemFile + "\n");
+
+            final var config = new VaultConfig().environmentLoader(mock).build();
+            assertEquals("https://127.0.0.1:8200", config.getAddress());
+            assertEquals("s.token", new String(config.getToken()));
+            assertEquals(Integer.valueOf(5), config.getOpenTimeout());
+            assertEquals(Integer.valueOf(30), config.getReadTimeout());
+            Assert.assertNotNull(config.getSslConfig().getSslContext());
+        } finally {
+            Files.delete(pemFile);
+        }
+    }
 }
