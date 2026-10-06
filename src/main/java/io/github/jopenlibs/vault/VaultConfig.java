@@ -1,5 +1,6 @@
 package io.github.jopenlibs.vault;
 
+import io.github.jopenlibs.vault.rest.Rest;
 import java.io.Serializable;
 import java.net.http.HttpClient;
 import java.util.Collections;
@@ -46,6 +47,7 @@ public class VaultConfig implements Serializable {
     private String nameSpace;
     private EnvironmentLoader environmentLoader;
     private HttpClient httpClient;
+    private transient volatile HttpClient defaultHttpClient;
 
     /**
      * <p>The code used to load environment variables is encapsulated here, so that a mock version
@@ -194,6 +196,7 @@ public class VaultConfig implements Serializable {
      */
     public VaultConfig sslConfig(final SslConfig sslConfig) {
         this.sslConfig = sslConfig;
+        this.defaultHttpClient = null;
         return this;
     }
 
@@ -212,6 +215,7 @@ public class VaultConfig implements Serializable {
      */
     public VaultConfig openTimeout(final Integer openTimeout) {
         this.openTimeout = openTimeout;
+        this.defaultHttpClient = null;
         return this;
     }
 
@@ -286,8 +290,8 @@ public class VaultConfig implements Serializable {
 
     /**
      * <p>Set a preconfigured HttpClient instance to use by REST API calls. This allows to reuse
-     * http resources (connections, worker threads) between calls. If a preconfigured HttpClient is specified, then
-     * sslConfig and openTimeout values passed to VaultConfig are ignored.
+     * http resources (connections, worker threads) between calls. If a preconfigured HttpClient is
+     * specified, then sslConfig and openTimeout values passed to VaultConfig are ignored.
      *
      * @param httpClient preconfigured http client instance
      * @return VaultConfig
@@ -390,6 +394,7 @@ public class VaultConfig implements Serializable {
         if (this.sslConfig == null) {
             this.sslConfig = new SslConfig().environmentLoader(this.environmentLoader).build();
         }
+        this.defaultHttpClient = null;
         return this;
     }
 
@@ -437,7 +442,30 @@ public class VaultConfig implements Serializable {
         return prefixPathDepth;
     }
 
+    /**
+     * <p>Returns the HttpClient used by REST API calls: the one set with
+     * {@link #httpClient(HttpClient)} if any, otherwise a client built from this config's sslConfig
+     * and openTimeout values. The latter is built once and shared by all calls, so connections and
+     * worker threads are reused.</p>
+     *
+     * @return The HttpClient used by REST API calls
+     */
     public HttpClient getHttpClient() {
-        return httpClient;
+        if (httpClient != null) {
+            return httpClient;
+        }
+        var client = defaultHttpClient;
+        if (client == null) {
+            synchronized (this) {
+                client = defaultHttpClient;
+                if (client == null) {
+                    client = Rest.newHttpClient(openTimeout,
+                            sslConfig == null ? null : sslConfig.isVerify(),
+                            sslConfig == null ? null : sslConfig.getSslContext());
+                    defaultHttpClient = client;
+                }
+            }
+        }
+        return client;
     }
 }

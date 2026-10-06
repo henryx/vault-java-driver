@@ -5,8 +5,6 @@ import io.github.jopenlibs.vault.VaultException;
 import io.github.jopenlibs.vault.api.OperationsBase;
 import io.github.jopenlibs.vault.json.Json;
 import io.github.jopenlibs.vault.response.VaultResponse;
-import io.github.jopenlibs.vault.rest.Rest;
-import io.github.jopenlibs.vault.rest.RestResponse;
 import java.nio.charset.StandardCharsets;
 
 
@@ -54,7 +52,7 @@ public class Leases extends OperationsBase {
     public VaultResponse revoke(final String leaseId) throws VaultException {
         return retry(attempt -> {
             final String requestJson = Json.object().add("lease_id", leaseId).toString();
-            final var restResponse = new Rest()//NOPMD
+            final var restResponse = getRest()//NOPMD
                     .url(config.getAddress() + "/v1/sys/leases/revoke")
                     .token(config.getToken())
                     .header("X-Vault-Namespace", this.nameSpace)
@@ -95,7 +93,7 @@ public class Leases extends OperationsBase {
      */
     public VaultResponse revokePrefix(final String prefix) throws VaultException {
         return retry(attempt -> {
-            final var restResponse = new Rest()//NOPMD
+            final var restResponse = getRest()//NOPMD
                     .url(config.getAddress() + "/v1/sys/leases/revoke-prefix/" + prefix)
                     .token(config.getToken())
                     .header("X-Vault-Namespace", this.nameSpace)
@@ -137,7 +135,7 @@ public class Leases extends OperationsBase {
      */
     public VaultResponse revokeForce(final String prefix) throws VaultException {
         return retry(attempt -> {
-            final var restResponse = new Rest()//NOPMD
+            final var restResponse = getRest()//NOPMD
                     .url(config.getAddress() + "/v1/sys/leases/revoke-force/" + prefix)
                     .token(config.getToken())
                     .header("X-Vault-Namespace", this.nameSpace)
@@ -185,7 +183,7 @@ public class Leases extends OperationsBase {
 
         return retry(attempt -> {
             final String requestJson = Json.object().add("increment", increment).toString();
-            final var restResponse = new Rest()//NOPMD
+            final var restResponse = getRest()//NOPMD
                     .url(config.getAddress() + "/v1/sys/leases/renew/" + leaseId)
                     .token(config.getToken())
                     .header("X-Vault-Namespace", this.nameSpace)

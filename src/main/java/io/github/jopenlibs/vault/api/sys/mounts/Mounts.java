@@ -4,8 +4,6 @@ import io.github.jopenlibs.vault.VaultConfig;
 import io.github.jopenlibs.vault.VaultException;
 import io.github.jopenlibs.vault.api.OperationsBase;
 import io.github.jopenlibs.vault.response.MountResponse;
-import io.github.jopenlibs.vault.rest.Rest;
-import io.github.jopenlibs.vault.rest.RestResponse;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -45,7 +43,7 @@ public class Mounts extends OperationsBase {
      */
     public MountResponse list() throws VaultException {
         return retry(attempt -> {
-            final var restResponse = new Rest()//NOPMD
+            final var restResponse = getRest()//NOPMD
                     .url(String.format("%s/v1/sys/mounts", config.getAddress()))
                     .token(config.getToken())
                     .header("X-Vault-Request", "true")
@@ -115,7 +113,7 @@ public class Mounts extends OperationsBase {
         return retry(attempt -> {
             final String requestJson = payload.toEnableJson(type).toString();
 
-            final var restResponse = new Rest()//NOPMD
+            final var restResponse = getRest()//NOPMD
                     .url(String.format("%s/v1/sys/mounts/%s", config.getAddress(), path))
                     .token(config.getToken())
                     .header("X-Vault-Request", "true")
@@ -165,7 +163,7 @@ public class Mounts extends OperationsBase {
      */
     public MountResponse disable(final String path) throws VaultException {
         return retry(attempt -> {
-            final var restResponse = new Rest()//NOPMD
+            final var restResponse = getRest()//NOPMD
                     .url(String.format("%s/v1/sys/mounts/%s", config.getAddress(), path))
                     .token(config.getToken())
                     .header("X-Vault-Request", "true")
@@ -214,7 +212,7 @@ public class Mounts extends OperationsBase {
      */
     public MountResponse read(final String path) throws VaultException {
         return retry(attempt -> {
-            final var restResponse = new Rest()//NOPMD
+            final var restResponse = getRest()//NOPMD
                     .url(String.format("%s/v1/sys/mounts/%s/tune", config.getAddress(), path))
                     .token(config.getToken())
                     .header("X-Vault-Request", "true")
@@ -278,7 +276,7 @@ public class Mounts extends OperationsBase {
 
             final String requestJson = payload.toTuneJson().toString();
 
-            final var restResponse = new Rest()//NOPMD
+            final var restResponse = getRest()//NOPMD
                     .url(String.format("%s/v1/sys/mounts/%s/tune", config.getAddress(), path))
                     .token(config.getToken())
                     .header("X-Vault-Request", "true")

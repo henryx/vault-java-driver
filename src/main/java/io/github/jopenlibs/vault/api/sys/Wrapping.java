@@ -9,7 +9,6 @@ import io.github.jopenlibs.vault.json.JsonObject;
 import io.github.jopenlibs.vault.response.LogicalResponse;
 import io.github.jopenlibs.vault.response.UnwrapResponse;
 import io.github.jopenlibs.vault.response.WrapResponse;
-import io.github.jopenlibs.vault.rest.Rest;
 import io.github.jopenlibs.vault.rest.RestResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -111,7 +110,7 @@ public class Wrapping extends OperationsBase {
 
         return retry(attempt -> {
             // HTTP request to Vault
-            var rest = new Rest()//NOPMD
+            var rest = getRest()//NOPMD
                     .url(config.getAddress() + "/v1/sys/wrapping/lookup")
                     .header("X-Vault-Namespace", this.nameSpace)
                     .header("X-Vault-Request", "true")
@@ -212,7 +211,7 @@ public class Wrapping extends OperationsBase {
             final String url = config.getAddress() + "/v1/sys/wrapping/wrap";
 
             // HTTP request to Vault
-            final var restResponse = new Rest()
+            final var restResponse = getRest()
                     .url(url)
                     .token(config.getToken())
                     .header("X-Vault-Wrap-TTL", Integer.toString(ttlInSec))
@@ -384,7 +383,7 @@ public class Wrapping extends OperationsBase {
             final String url = config.getAddress() + "/v1/sys/wrapping/unwrap";
 
             // HTTP request to Vault
-            var rest = new Rest()
+            var rest = getRest()
                     .url(url)
                     .header("X-Vault-Namespace", this.nameSpace)
                     .header("X-Vault-Request", "true")
@@ -471,7 +470,7 @@ public class Wrapping extends OperationsBase {
             final String url = config.getAddress() + "/v1/sys/wrapping/rewrap";
 
             // HTTP request to Vault
-            final var restResponse = new Rest()
+            final var restResponse = getRest()
                     .url(url)
                     .token(config.getToken())
                     .header("X-Vault-Namespace", this.nameSpace)

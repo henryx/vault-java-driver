@@ -10,11 +10,9 @@ import io.github.jopenlibs.vault.api.sys.Seal;
 import io.github.jopenlibs.vault.api.sys.Sys;
 import io.github.jopenlibs.vault.api.sys.mounts.Mounts;
 import io.github.jopenlibs.vault.json.Json;
-import io.github.jopenlibs.vault.json.JsonObject;
 import io.github.jopenlibs.vault.json.JsonValue;
 import io.github.jopenlibs.vault.rest.Rest;
 import io.github.jopenlibs.vault.rest.RestException;
-import io.github.jopenlibs.vault.rest.RestResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -307,7 +305,7 @@ public class VaultImpl implements Vault {
      */
     private Map<String, String> collectSecretEngineVersions() {
         try {
-            final var restResponse = new Rest()//NOPMD
+            final var restResponse = new Rest(vaultConfig.getHttpClient())//NOPMD
                     .url(vaultConfig.getAddress() + "/v1/sys/mounts")
                     .token(vaultConfig.getToken())
                     .header("X-Vault-Namespace", this.vaultConfig.getNameSpace())

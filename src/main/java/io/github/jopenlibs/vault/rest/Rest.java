@@ -203,8 +203,8 @@ public class Rest {
      * <p>This method may be chained together repeatedly</p>
      *
      * @param value The vault token value as a {@code char[]}
-     * @return This object, with a vault token added, ready for other builder-pattern config methods or
-     * an HTTP verb method
+     * @return This object, with a vault token added, ready for other builder-pattern config methods
+     * or an HTTP verb method
      */
     public Rest token(final char[] value) {
         if (value != null && value.length > 0) {
@@ -461,6 +461,22 @@ public class Rest {
         if (configuredClient != null) {
             return configuredClient;
         }
+        return newHttpClient(connectTimeoutSeconds, sslVerification, sslContext);
+    }
+
+    /**
+     * Builds an {@link HttpClient} with the given connection settings. The returned client is meant
+     * to be built once and shared between requests (see {@link #Rest(HttpClient)}), so that
+     * connections and worker threads are reused.
+     *
+     * @param connectTimeoutSeconds Number of seconds to wait for a connection, or
+     * <code>null</code> for no timeout
+     * @param sslVerification <code>false</code> to disable SSL certificate verification
+     * @param sslContext The SSLContext to use, or <code>null</code> for the JVM default
+     * @return A new {@link HttpClient} instance
+     */
+    public static HttpClient newHttpClient(final Integer connectTimeoutSeconds,
+            final Boolean sslVerification, final SSLContext sslContext) {
         final var client = HttpClient.newBuilder()
                 //Stick to HTTP/1.1 by default, coz Vault Agent fails proxying h2c request to https
                 .version(Version.HTTP_1_1);
