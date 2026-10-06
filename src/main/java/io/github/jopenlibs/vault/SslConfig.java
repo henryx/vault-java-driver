@@ -788,6 +788,8 @@ public class SslConfig implements Serializable {
      */
     private void readObject(java.io.ObjectInputStream in)
             throws IOException, ClassNotFoundException {//NOPMD
+        // Restore the serialized fields first: buildSsl() depends on them (e.g. verify, pemUTF8)
+        in.defaultReadObject();
         try {
             buildSsl();
         } catch (VaultException e) {
