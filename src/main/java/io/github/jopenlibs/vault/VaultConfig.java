@@ -361,14 +361,14 @@ public class VaultConfig implements Serializable {
             this.environmentLoader = new EnvironmentLoader();
         }
         if (this.address == null) {
-            final String addressFromEnv = environmentLoader.loadVariable(VAULT_ADDR);
+            final String addressFromEnv = EnvironmentLoader.load(environmentLoader, VAULT_ADDR);
             if (addressFromEnv != null) {
                 this.address = addressFromEnv;
             } else {
                 throw new VaultException("No address is set");
             }
         }
-        String envVaultToken = environmentLoader.loadVariable(VAULT_TOKEN);
+        String envVaultToken = EnvironmentLoader.load(environmentLoader, VAULT_TOKEN);
         if (this.token == null && envVaultToken != null) {
             this.token = envVaultToken.toCharArray();
         }
@@ -392,7 +392,7 @@ public class VaultConfig implements Serializable {
      * @return The timeout, or <code>null</code> if the variable is unset or not an integer
      */
     private Integer loadTimeoutVariable(final String name) {
-        final String value = environmentLoader.loadVariable(name);
+        final String value = EnvironmentLoader.load(environmentLoader, name);
         if (value == null) {
             return null;
         }

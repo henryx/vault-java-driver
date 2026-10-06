@@ -348,4 +348,35 @@ public class VaultConfigTests {
         mock.override("VAULT_SSL_VERIFY", "true");
         Assert.assertFalse(new SslConfig().environmentLoader(mock).verify(false).build().isVerify());
     }
+
+    /**
+     * Empty or blank values from any environment loader, even a custom one, are treated as unset.
+     */
+    @Test
+    public void testConfigBuilder_LoadFromEnv_EmptyAddressIsUnset() {
+        final var mock = new MockEnvironmentLoader();
+        mock.override("VAULT_ADDR", "");
+        try {
+            new VaultConfig().environmentLoader(mock).build();
+            Assert.fail("Expected VaultException");
+        } catch (VaultException e) {
+            assertEquals("No address is set", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testConfigBuilder_LoadFromEnv_EmptyValuesAreUnset() throws VaultException {
+        final var mock = new MockEnvironmentLoader();
+        mock.override("VAULT_ADDR", "https://127.0.0.1:8200");
+        mock.override("VAULT_TOKEN", "");
+        mock.override("VAULT_OPEN_TIMEOUT", "");
+        mock.override("VAULT_READ_TIMEOUT", " ");
+        mock.override("VAULT_SSL_CERT", "");
+
+        final var config = new VaultConfig().environmentLoader(mock).build();
+        Assert.assertNull(config.getToken());
+        Assert.assertNull(config.getOpenTimeout());
+        Assert.assertNull(config.getReadTimeout());
+        Assert.assertNull(config.getSslConfig().getSslContext());
+    }
 }

@@ -504,15 +504,17 @@ public class SslConfig implements Serializable {
         if (this.verifyObject != null) {
             this.verify = verifyObject;
         } else {
-            this.verify = parseVerify(environmentLoader.loadVariable(VAULT_SSL_VERIFY));
+            this.verify = parseVerify(EnvironmentLoader.load(environmentLoader, VAULT_SSL_VERIFY));
         }
-        if (this.verify && this.pemUTF8 == null
-                && environmentLoader.loadVariable(VAULT_SSL_CERT) != null) {
-            final var pemFile = new File(environmentLoader.loadVariable(VAULT_SSL_CERT));
-            try {
-                this.pemUTF8 = Files.readString(pemFile.toPath(), StandardCharsets.UTF_8);
-            } catch (IOException e) {
-                throw new VaultException(e);
+        if (this.verify && this.pemUTF8 == null) {
+            final String pemPath = EnvironmentLoader.load(environmentLoader, VAULT_SSL_CERT);
+            if (pemPath != null) {
+                try {
+                    this.pemUTF8 = Files.readString(new File(pemPath).toPath(),
+                            StandardCharsets.UTF_8);
+                } catch (IOException e) {
+                    throw new VaultException(e);
+                }
             }
         }
         buildSsl();
