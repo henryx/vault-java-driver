@@ -64,4 +64,6 @@ jobs:
         with:
           overwrite: true
           name: test-results-${{ matrix.os }}-${{ matrix.vault }}
-          path: build/test-results/
+          path: |
+            target/surefire-reports/TEST-*.xml
+            target/failsafe-reports/TEST-*.xml
