@@ -256,9 +256,7 @@ public class Auth extends OperationsBase {
     public Auth(final VaultConfig config) {
         super(config);
 
-        if (this.config.getNameSpace() != null && !this.config.getNameSpace().isEmpty()) {
-            this.nameSpace = this.config.getNameSpace();
-        }
+        this.nameSpace = this.config.getNameSpace();
     }
 
     public Auth withNameSpace(final String nameSpace) {

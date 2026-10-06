@@ -11,6 +11,28 @@ import org.junit.Test;
  */
 public class VaultTests {
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testNullEngineVersionIsRejected() throws VaultException {
+        final var config = new VaultConfig().address("http://127.0.0.1:8200").build();
+        Vault.create(config, (Integer) null);
+    }
+
+    @Test
+    public void testNullUseSecretsEnginePathMapIsFalse() throws VaultException {
+        final var config = new VaultConfig().address("http://127.0.0.1:8200").build();
+        final var vault = Vault.create(config, null, 1);
+        Assert.assertEquals(Integer.valueOf(1),
+                vault.logical().getEngineVersionForSecretPath("secret/hello"));
+    }
+
+    @Test
+    public void testUnsetEngineVersionDefaultsTo2() throws VaultException {
+        final var config = new VaultConfig().address("http://127.0.0.1:8200").build();
+        final var vault = Vault.create(config, false, null);
+        Assert.assertEquals(Integer.valueOf(2),
+                vault.logical().getEngineVersionForSecretPath("secret/hello"));
+    }
+
     @Test
     public void testDefaultVaultConstructor() {
         var vaultConfig = new VaultConfig();

@@ -25,9 +25,7 @@ public class Seal extends OperationsBase {
     public Seal(final VaultConfig config) {
         super(config);
 
-        if (this.config.getNameSpace() != null && !this.config.getNameSpace().isEmpty()) {
-            this.nameSpace = this.config.getNameSpace();
-        }
+        this.nameSpace = this.config.getNameSpace();
     }
 
     public Seal withNameSpace(final String nameSpace) {

@@ -29,9 +29,7 @@ public class Wrapping extends OperationsBase {
     public Wrapping(final VaultConfig config) {
         super(config);
 
-        if (this.config.getNameSpace() != null && !this.config.getNameSpace().isEmpty()) {
-            this.nameSpace = this.config.getNameSpace();
-        }
+        this.nameSpace = this.config.getNameSpace();
     }
 
     /**

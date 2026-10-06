@@ -23,9 +23,7 @@ public class Debug extends OperationsBase {
     public Debug(final VaultConfig config) {
         super(config);
 
-        if (this.config.getNameSpace() != null && !this.config.getNameSpace().isEmpty()) {
-            this.nameSpace = this.config.getNameSpace();
-        }
+        this.nameSpace = this.config.getNameSpace();
     }
 
     public Debug withNameSpace(final String nameSpace) {

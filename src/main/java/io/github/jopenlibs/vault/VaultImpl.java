@@ -88,7 +88,7 @@ public class VaultImpl implements Vault {
      * 2)
      */
     public VaultImpl(final VaultConfig vaultConfig, final Integer engineVersion) {
-        if (engineVersion < 1 || engineVersion > 2) {
+        if (engineVersion == null || engineVersion < 1 || engineVersion > 2) {
             throw new IllegalArgumentException(
                     "The Engine version must be '1' or '2', the version supplied was: '"
                             + engineVersion + "'.");
@@ -117,7 +117,7 @@ public class VaultImpl implements Vault {
         this.vaultConfig = vaultConfig;
         logNameSpace();
         this.vaultConfig.setEngineVersion(globalFallbackVersion);
-        if (useSecretsEnginePathMap && this.vaultConfig.getSecretsEnginePathMap().isEmpty()) {
+        if (Boolean.TRUE.equals(useSecretsEnginePathMap) && this.vaultConfig.getSecretsEnginePathMap().isEmpty()) {
             try {
                 logger.info(
                         "No secrets Engine version map was supplied, attempting to generate one.");

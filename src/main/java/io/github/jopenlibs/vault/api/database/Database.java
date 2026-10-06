@@ -52,9 +52,7 @@ public class Database extends OperationsBase {
         super(config);
 
         this.mountPath = mountPath;
-        if (this.config.getNameSpace() != null && !this.config.getNameSpace().isEmpty()) {
-            this.nameSpace = this.config.getNameSpace();
-        }
+        this.nameSpace = this.config.getNameSpace();
     }
 
     /**
