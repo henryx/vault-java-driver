@@ -445,16 +445,15 @@ public class Rest {
      */
     private RestResponse send(final HttpRequest req) throws IOException, InterruptedException {
         final var client = getClient();
-        final var response = client.send(req, BodyHandlers.ofString());
+        final var response = client.send(req, BodyHandlers.ofByteArray());
 
         // Get the resulting status code
         final var statusCode = response.statusCode();
 
-        // Download and parse response
+        // Keep the raw response bytes, decoding is left to the caller
         final var mimeType = response.headers().firstValue("Content-Type").orElse("");
-        final var body = response.body().getBytes(StandardCharsets.UTF_8);
 
-        return new RestResponse(statusCode, mimeType, body);
+        return new RestResponse(statusCode, mimeType, response.body());
     }
 
     private HttpClient getClient() {
