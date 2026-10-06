@@ -69,11 +69,7 @@ public class VaultImpl implements Vault {
      */
     public VaultImpl(final VaultConfig vaultConfig) {
         this.vaultConfig = vaultConfig;
-        if (this.vaultConfig.getNameSpace() != null && !this.vaultConfig.getNameSpace().isEmpty()) {
-            logger.info(String.format(
-                    "The NameSpace %s has been bound to this Vault instance. Please keep this in mind when running operations.",
-                    this.vaultConfig.getNameSpace()));
-        }
+        logNameSpace();
         if (this.vaultConfig.getSecretsEnginePathMap().isEmpty()
                 && this.vaultConfig.getGlobalEngineVersion() == null) {
             logger.info(
@@ -99,11 +95,7 @@ public class VaultImpl implements Vault {
         }
         vaultConfig.setEngineVersion(engineVersion);
         this.vaultConfig = vaultConfig;
-        if (this.vaultConfig.getNameSpace() != null && !this.vaultConfig.getNameSpace().isEmpty()) {
-            logger.info(String.format(
-                    "The Namespace %s has been bound to this Vault instance. Please keep this in mind when running operations.",
-                    this.vaultConfig.getNameSpace()));
-        }
+        logNameSpace();
     }
 
     /**
@@ -123,11 +115,7 @@ public class VaultImpl implements Vault {
             final Integer globalFallbackVersion)
             throws VaultException {
         this.vaultConfig = vaultConfig;
-        if (this.vaultConfig.getNameSpace() != null && !this.vaultConfig.getNameSpace().isEmpty()) {
-            logger.info(String.format(
-                    "The Namespace %s has been bound to this Vault instance. Please keep this in mind when running operations.",
-                    this.vaultConfig.getNameSpace()));
-        }
+        logNameSpace();
         this.vaultConfig.setEngineVersion(globalFallbackVersion);
         if (useSecretsEnginePathMap && this.vaultConfig.getSecretsEnginePathMap().isEmpty()) {
             try {
@@ -143,6 +131,15 @@ public class VaultImpl implements Vault {
                                 "version, " + "due to exception: %s",
                         e.getMessage() + ". Do you have admin rights?"));
             }
+        }
+    }
+
+    private void logNameSpace() {
+        final String nameSpace = this.vaultConfig.getNameSpace();
+        if (nameSpace != null && !nameSpace.isEmpty()) {
+            logger.info(String.format(
+                    "The Namespace %s has been bound to this Vault instance. Please keep this in mind when running operations.",
+                    nameSpace));
         }
     }
 
@@ -337,7 +334,7 @@ public class VaultImpl implements Vault {
             }
             return data;
         } catch (RestException e) {
-            System.err.print(
+            logger.warning(
                     String.format("Unable to retrieve the KV Engine secrets, due to exception: %s",
                             e.getMessage()));
             return null;

@@ -6,6 +6,7 @@ import java.net.http.HttpClient;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 /**
  * <p>A container for the configuration settings needed to initialize a <code>Vault</code> driver
@@ -33,6 +34,8 @@ public class VaultConfig implements Serializable {
     private static final String VAULT_ADDR = "VAULT_ADDR";
     private static final String VAULT_OPEN_TIMEOUT = "VAULT_OPEN_TIMEOUT";
     private static final String VAULT_READ_TIMEOUT = "VAULT_READ_TIMEOUT";
+
+    private static final Logger LOGGER = Logger.getLogger(VaultConfig.class.getCanonicalName());
 
     private Map<String, String> secretsEnginePathMap = new ConcurrentHashMap<>();
     private String address;
@@ -369,33 +372,38 @@ public class VaultConfig implements Serializable {
         if (this.token == null && envVaultToken != null) {
             this.token = envVaultToken.toCharArray();
         }
-        if (this.openTimeout == null
-                && environmentLoader.loadVariable(VAULT_OPEN_TIMEOUT) != null) {
-            try {
-                this.openTimeout = Integer.valueOf(
-                        environmentLoader.loadVariable(VAULT_OPEN_TIMEOUT));
-            } catch (NumberFormatException e) {
-                System.err.printf("The " + VAULT_OPEN_TIMEOUT
-                                + " environment variable contains value \"%s\", which cannot be parsed as an integer timeout period.%n",
-                        environmentLoader.loadVariable(VAULT_OPEN_TIMEOUT));
-            }
+        if (this.openTimeout == null) {
+            this.openTimeout = loadTimeoutVariable(VAULT_OPEN_TIMEOUT);
         }
-        if (this.readTimeout == null
-                && environmentLoader.loadVariable(VAULT_READ_TIMEOUT) != null) {
-            try {
-                this.readTimeout = Integer.valueOf(
-                        environmentLoader.loadVariable(VAULT_READ_TIMEOUT));
-            } catch (NumberFormatException e) {
-                System.err.printf("The " + VAULT_READ_TIMEOUT
-                                + " environment variable contains value \"%s\", which cannot be parsed as an integer timeout period.%n",
-                        environmentLoader.loadVariable(VAULT_READ_TIMEOUT));
-            }
+        if (this.readTimeout == null) {
+            this.readTimeout = loadTimeoutVariable(VAULT_READ_TIMEOUT);
         }
         if (this.sslConfig == null) {
             this.sslConfig = new SslConfig().environmentLoader(this.environmentLoader).build();
         }
         this.defaultHttpClient = null;
         return this;
+    }
+
+    /**
+     * Reads a timeout period from an environment variable.
+     *
+     * @param name The environment variable name
+     * @return The timeout, or <code>null</code> if the variable is unset or not an integer
+     */
+    private Integer loadTimeoutVariable(final String name) {
+        final String value = environmentLoader.loadVariable(name);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException e) {
+            LOGGER.warning(String.format(
+                    "The %s environment variable contains value \"%s\", which cannot be parsed as an integer timeout period.",
+                    name, value));
+            return null;
+        }
     }
 
     public Map<String, String> getSecretsEnginePathMap() {
