@@ -47,10 +47,7 @@ public class Mounts extends OperationsBase {
                     .url(String.format("%s/v1/sys/mounts", config.getAddress()))
                     .token(config.getToken())
                     .header("X-Vault-Request", "true")
-                    .connectTimeoutSeconds(config.getOpenTimeout())
                     .readTimeoutSeconds(config.getReadTimeout())
-                    .sslVerification(config.getSslConfig().isVerify())
-                    .sslContext(config.getSslConfig().getSslContext())
                     .get();
 
             // Validate restResponse
@@ -118,10 +115,7 @@ public class Mounts extends OperationsBase {
                     .token(config.getToken())
                     .header("X-Vault-Request", "true")
                     .body(requestJson.getBytes(StandardCharsets.UTF_8))
-                    .connectTimeoutSeconds(config.getOpenTimeout())
                     .readTimeoutSeconds(config.getReadTimeout())
-                    .sslVerification(config.getSslConfig().isVerify())
-                    .sslContext(config.getSslConfig().getSslContext())
                     .post();
 
             // Validate restResponse
@@ -167,10 +161,7 @@ public class Mounts extends OperationsBase {
                     .url(String.format("%s/v1/sys/mounts/%s", config.getAddress(), path))
                     .token(config.getToken())
                     .header("X-Vault-Request", "true")
-                    .connectTimeoutSeconds(config.getOpenTimeout())
                     .readTimeoutSeconds(config.getReadTimeout())
-                    .sslVerification(config.getSslConfig().isVerify())
-                    .sslContext(config.getSslConfig().getSslContext())
                     .delete();
 
             // Validate restResponse
@@ -216,10 +207,7 @@ public class Mounts extends OperationsBase {
                     .url(String.format("%s/v1/sys/mounts/%s/tune", config.getAddress(), path))
                     .token(config.getToken())
                     .header("X-Vault-Request", "true")
-                    .connectTimeoutSeconds(config.getOpenTimeout())
                     .readTimeoutSeconds(config.getReadTimeout())
-                    .sslVerification(config.getSslConfig().isVerify())
-                    .sslContext(config.getSslConfig().getSslContext())
                     .get();
 
             // Validate restResponse
@@ -281,10 +269,7 @@ public class Mounts extends OperationsBase {
                     .token(config.getToken())
                     .header("X-Vault-Request", "true")
                     .body(requestJson.getBytes(StandardCharsets.UTF_8))
-                    .connectTimeoutSeconds(config.getOpenTimeout())
                     .readTimeoutSeconds(config.getReadTimeout())
-                    .sslVerification(config.getSslConfig().isVerify())
-                    .sslContext(config.getSslConfig().getSslContext())
                     .post();
 
             // Validate restResponse

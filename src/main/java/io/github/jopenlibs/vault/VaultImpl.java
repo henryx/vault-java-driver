@@ -307,10 +307,7 @@ public class VaultImpl implements Vault {
                     .token(vaultConfig.getToken())
                     .header("X-Vault-Namespace", this.vaultConfig.getNameSpace())
                     .header("X-Vault-Request", "true")
-                    .connectTimeoutSeconds(vaultConfig.getOpenTimeout())
                     .readTimeoutSeconds(vaultConfig.getReadTimeout())
-                    .sslVerification(vaultConfig.getSslConfig().isVerify())
-                    .sslContext(vaultConfig.getSslConfig().getSslContext())
                     .get();
             if (restResponse.getStatus() != 200) {
                 return null;

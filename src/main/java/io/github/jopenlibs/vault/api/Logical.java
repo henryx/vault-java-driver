@@ -91,10 +91,7 @@ public class Logical extends OperationsBase {
                     .token(config.getToken())
                     .header("X-Vault-Namespace", this.nameSpace)
                     .header("X-Vault-Request", "true")
-                    .connectTimeoutSeconds(config.getOpenTimeout())
                     .readTimeoutSeconds(config.getReadTimeout())
-                    .sslVerification(config.getSslConfig().isVerify())
-                    .sslContext(config.getSslConfig().getSslContext())
                     .get();
 
             // Validate response - don't treat 4xx class errors as exceptions (except 412), we want to return an error as the response
@@ -151,10 +148,7 @@ public class Logical extends OperationsBase {
                                     .header("X-Vault-Namespace", this.nameSpace)
                                     .header("X-Vault-Request", "true")
                                     .parameter("version", version.toString())
-                                    .connectTimeoutSeconds(config.getOpenTimeout())
                                     .readTimeoutSeconds(config.getReadTimeout())
-                                    .sslVerification(config.getSslConfig().isVerify())
-                                    .sslContext(config.getSslConfig().getSslContext())
                                     .get();
 
                     // Validate response - don't treat 4xx class errors as exceptions (except 412), we want to return an error as the response
@@ -291,10 +285,7 @@ public class Logical extends OperationsBase {
                     .header("X-Vault-Namespace", this.nameSpace)
                     .header("X-Vault-Request", "true")
                     .header("X-Vault-Wrap-TTL", wrapTTL != null ? wrapTTL.toString() : null)
-                    .connectTimeoutSeconds(config.getOpenTimeout())
                     .readTimeoutSeconds(config.getReadTimeout())
-                    .sslVerification(config.getSslConfig().isVerify())
-                    .sslContext(config.getSslConfig().getSslContext())
                     .post();
 
             // HTTP Status should be either 200 (with content - e.g. PKI write) or 204 (no content)
@@ -400,10 +391,7 @@ public class Logical extends OperationsBase {
                     .token(config.getToken())
                     .header("X-Vault-Namespace", this.nameSpace)
                     .header("X-Vault-Request", "true")
-                    .connectTimeoutSeconds(config.getOpenTimeout())
                     .readTimeoutSeconds(config.getReadTimeout())
-                    .sslVerification(config.getSslConfig().isVerify())
-                    .sslContext(config.getSslConfig().getSslContext())
                     .delete();
 
             // Validate response
@@ -450,10 +438,7 @@ public class Logical extends OperationsBase {
                     .token(config.getToken())
                     .header("X-Vault-Namespace", this.nameSpace)
                     .header("X-Vault-Request", "true")
-                    .connectTimeoutSeconds(config.getOpenTimeout())
                     .readTimeoutSeconds(config.getReadTimeout())
-                    .sslVerification(config.getSslConfig().isVerify())
-                    .sslContext(config.getSslConfig().getSslContext())
                     .body(versionsToDelete.toString().getBytes(StandardCharsets.UTF_8))
                     .post();
 
@@ -510,10 +495,7 @@ public class Logical extends OperationsBase {
                     .token(config.getToken())
                     .header("X-Vault-Namespace", this.nameSpace)
                     .header("X-Vault-Request", "true")
-                    .connectTimeoutSeconds(config.getOpenTimeout())
                     .readTimeoutSeconds(config.getReadTimeout())
-                    .sslVerification(config.getSslConfig().isVerify())
-                    .sslContext(config.getSslConfig().getSslContext())
                     .body(versionsToUnDelete.toString().getBytes(StandardCharsets.UTF_8))
                     .post();
 
@@ -557,10 +539,7 @@ public class Logical extends OperationsBase {
                     .token(config.getToken())
                     .header("X-Vault-Namespace", this.nameSpace)
                     .header("X-Vault-Request", "true")
-                    .connectTimeoutSeconds(config.getOpenTimeout())
                     .readTimeoutSeconds(config.getReadTimeout())
-                    .sslVerification(config.getSslConfig().isVerify())
-                    .sslContext(config.getSslConfig().getSslContext())
                     .body(versionsToDestroy.toString().getBytes(StandardCharsets.UTF_8))
                     .post();
 
@@ -594,10 +573,7 @@ public class Logical extends OperationsBase {
                     .token(config.getToken())
                     .header("X-Vault-Namespace", this.nameSpace)
                     .header("X-Vault-Request", "true")
-                    .connectTimeoutSeconds(config.getOpenTimeout())
                     .readTimeoutSeconds(config.getReadTimeout())
-                    .sslVerification(config.getSslConfig().isVerify())
-                    .sslContext(config.getSslConfig().getSslContext())
                     .body(kvToUpgrade.toString().getBytes(StandardCharsets.UTF_8))
                     .post();
 

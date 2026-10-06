@@ -107,10 +107,7 @@ public class Debug extends OperationsBase {
                     .token(config.getToken())
                     .header("X-Vault-Namespace", this.nameSpace)
                     .header("X-Vault-Request", "true")
-                    .connectTimeoutSeconds(config.getOpenTimeout())
-                    .readTimeoutSeconds(config.getReadTimeout())
-                    .sslVerification(config.getSslConfig().isVerify())
-                    .sslContext(config.getSslConfig().getSslContext());
+                    .readTimeoutSeconds(config.getReadTimeout());
             // Add params if present
             if (standbyOk != null) {
                 rest.parameter("standbyok", standbyOk.toString());
