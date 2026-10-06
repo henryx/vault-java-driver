@@ -212,7 +212,7 @@ public class VaultConfig implements Serializable {
      * environment variable.</p>
      *
      * @param openTimeout Number of seconds to wait for an HTTP(S) connection to successfully
-     * establish
+     * establish, or <code>0</code> for no timeout
      * @return This object, with openTimeout populated, ready for additional builder-pattern method
      * calls or else finalization with the build() method
      */
@@ -231,7 +231,7 @@ public class VaultConfig implements Serializable {
      * environment variable.</p>
      *
      * @param readTimeout Number of seconds to wait for all data to be retrieved from an established
-     * HTTP(S) connection
+     * HTTP(S) connection, or <code>0</code> for no timeout
      * @return This object, with readTimeout populated, ready for additional builder-pattern method
      * calls or else finalization with the build() method
      */
@@ -351,7 +351,8 @@ public class VaultConfig implements Serializable {
      *
      * @return This object, with all available config options parsed and loaded
      * @throws VaultException If the <code>address</code> field was left unset, and there is no
-     * <code>VAULT_ADDR</code> environment variable value with which to populate it.
+     * <code>VAULT_ADDR</code> environment variable value with which to populate it, or if a
+     * negative timeout was set.
      */
     public VaultConfig build() throws VaultException {
         if (this.nameSpace != null && this.nameSpace.isEmpty()) {
@@ -378,6 +379,12 @@ public class VaultConfig implements Serializable {
         if (this.readTimeout == null) {
             this.readTimeout = loadTimeoutVariable(VAULT_READ_TIMEOUT);
         }
+        if (this.openTimeout != null && this.openTimeout < 0) {
+            throw new VaultException("The open timeout cannot be negative: " + this.openTimeout);
+        }
+        if (this.readTimeout != null && this.readTimeout < 0) {
+            throw new VaultException("The read timeout cannot be negative: " + this.readTimeout);
+        }
         if (this.sslConfig == null) {
             this.sslConfig = new SslConfig().environmentLoader(this.environmentLoader).build();
         }
@@ -389,7 +396,8 @@ public class VaultConfig implements Serializable {
      * Reads a timeout period from an environment variable.
      *
      * @param name The environment variable name
-     * @return The timeout, or <code>null</code> if the variable is unset or not an integer
+     * @return The timeout, or <code>null</code> if the variable is unset, not an integer, or
+     * negative
      */
     private Integer loadTimeoutVariable(final String name) {
         final String value = EnvironmentLoader.load(environmentLoader, name);
@@ -397,13 +405,17 @@ public class VaultConfig implements Serializable {
             return null;
         }
         try {
-            return Integer.valueOf(value);
+            final int timeout = Integer.parseInt(value);
+            if (timeout >= 0) {
+                return timeout;
+            }
         } catch (NumberFormatException e) {
-            LOGGER.warning(String.format(
-                    "The %s environment variable contains value \"%s\", which cannot be parsed as an integer timeout period.",
-                    name, value));
-            return null;
+            // Reported below
         }
+        LOGGER.warning(String.format(
+                "The %s environment variable contains value \"%s\", which is not a valid timeout period (a non-negative integer).",
+                name, value));
+        return null;
     }
 
     public Map<String, String> getSecretsEnginePathMap() {

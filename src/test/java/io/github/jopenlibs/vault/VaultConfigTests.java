@@ -408,4 +408,20 @@ public class VaultConfigTests {
             Files.delete(pemFile);
         }
     }
+
+    /**
+     * A zero timeout from the environment is kept (it means no timeout), a negative one is
+     * ignored.
+     */
+    @Test
+    public void testConfigBuilder_LoadFromEnv_ZeroAndNegativeTimeouts() throws VaultException {
+        final var mock = new MockEnvironmentLoader();
+        mock.override("VAULT_ADDR", "http://127.0.0.1:8200");
+        mock.override("VAULT_OPEN_TIMEOUT", "0");
+        mock.override("VAULT_READ_TIMEOUT", "-1");
+
+        final var config = new VaultConfig().environmentLoader(mock).build();
+        assertEquals(Integer.valueOf(0), config.getOpenTimeout());
+        Assert.assertNull(config.getReadTimeout());
+    }
 }

@@ -235,7 +235,7 @@ public class Rest {
      * <p>The number of seconds to wait before giving up on establishing an HTTP(S) connection.</p>
      *
      * @param connectTimeoutSeconds Number of seconds to wait for an HTTP(S) connection to
-     * successfully establish
+     * successfully establish, or <code>0</code> for no timeout
      * @return This object, with connectTimeoutSeconds populated, ready for other builder-pattern
      * config methods or an HTTP verb method
      */
@@ -249,7 +249,7 @@ public class Rest {
      * to wait for all data to finish downloading.</p>
      *
      * @param readTimeoutSeconds Number of seconds to wait for all data to be retrieved from an
-     * established HTTP(S) connection
+     * established HTTP(S) connection, or <code>0</code> for no timeout
      * @return This object, with readTimeoutSeconds populated, ready for other builder-pattern
      * config methods or an HTTP verb method
      */
@@ -480,7 +480,8 @@ public class Rest {
                 //Stick to HTTP/1.1 by default, coz Vault Agent fails proxying h2c request to https
                 .version(Version.HTTP_1_1);
 
-        if (connectTimeoutSeconds != null) {
+        // As with HttpURLConnection, 0 means no timeout
+        if (connectTimeoutSeconds != null && connectTimeoutSeconds > 0) {
             client.connectTimeout(Duration.ofSeconds(connectTimeoutSeconds));
         }
 
@@ -528,7 +529,8 @@ public class Rest {
 
         headers.forEach(request::header);
 
-        if (readTimeoutSeconds != null) {
+        // As with HttpURLConnection, 0 means no timeout
+        if (readTimeoutSeconds != null && readTimeoutSeconds > 0) {
             request.timeout(Duration.ofSeconds(readTimeoutSeconds));
         }
 
