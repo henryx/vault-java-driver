@@ -331,6 +331,10 @@ final LogicalResponse response = vault.withRetries(5, 1000)
                                    .read("secret/hello");
 ```
 
+Only transient failures are retried: I/O errors (e.g. connection refused or timed out) and HTTP 5xx,
+408, 412 and 429 responses. Other 4xx responses (e.g. 400, 403, 404) fail immediately, since
+retrying them would not help.
+
 API Reference (Javadocs)
 ------------------------
 Full [Javadoc documentation](https://jopenlibs.github.io/vault-java-driver/javadoc).
@@ -356,7 +360,13 @@ patches.
   * A deserialized `SslConfig` now keeps its settings. Previously it had SSL verification disabled
   * Each `VaultConfig` now reuses a single HTTP client, so connections are reused between requests
     instead of a new client being created for every request. `VaultConfig.getHttpClient()` now
-    returns the client in use instead of `null` when none was set
+    returns the client in use instead of `null` when none was set. The client is rebuilt when the
+    `SslConfig` changes (e.g. SSL verification turned on or off, or `SslConfig.build()` called again
+    with new certificates)
+  * A `VaultConfig` with a custom `HttpClient` can be serialized. The client itself is not
+    serialized: the deserialized copy uses its own default client
+  * Query parameters are url-encoded only once. Previously reserved characters (e.g. `/`, `&`, `%`)
+    were encoded twice
   * Response bodies are returned exactly as received. Previously non-UTF-8 (e.g. binary) bodies
     were corrupted
   * Only transient errors are retried: I/O errors and HTTP 5xx, 408, 412 and 429 responses.
@@ -369,9 +379,13 @@ patches.
     (`Logical.getEngineVersionForSecretPath()` returns `2` instead of `null`)
   * `VaultConfig.nameSpace()` no longer throws `VaultException`: an empty namespace is rejected by
     `build()` instead. `VaultConfig.getSecretsEnginePathMap()` returns an unmodifiable map
+  * `VaultConfig.address()` treats a `null` or blank address as unset, falling back to `VAULT_ADDR`,
+    instead of throwing `NullPointerException`
+  * When the KV engine version map cannot be generated (e.g. no access to `sys/mounts`), the
+    `VaultException` message says so, instead of ending in `null`
   * Warnings are logged with `java.util.logging` instead of being printed to standard error
   * Build: pinned Maven plugin versions, fixed test reports in the GitHub Actions CI, removed the
-    unused Travis CI configuration
+    unused Travis CI configuration. Checkstyle now runs in the build, and fails it on violations
 * **6.2.3**: This release contains the following updates:
   * Improved Java 11 compatibility
   * Fixed integration tests with Vault 2.x
