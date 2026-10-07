@@ -1,10 +1,15 @@
 package io.github.jopenlibs.vault;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -545,5 +550,47 @@ public class VaultConfigTests {
                 .address("https://127.0.0.1:8200")
                 .sslConfig(new SslConfig().pemUTF8("not a certificate"))
                 .build();
+    }
+
+    /**
+     * An environment loader with no variables set, that can be serialized (unlike the inner
+     * <code>MockEnvironmentLoader</code>, which holds a reference to the test instance).
+     */
+    static class EmptyEnvironmentLoader extends EnvironmentLoader {
+
+        @Override
+        public String loadVariable(final String name) {
+            return null;
+        }
+    }
+
+    /**
+     * A <code>VaultConfig</code> with a preconfigured <code>HttpClient</code> (which is not
+     * serializable) can be serialized. The deserialized copy falls back to its own default client.
+     */
+    @Test
+    public void testSerializationWithCustomHttpClient() throws Exception {
+        final HttpClient httpClient = HttpClient.newHttpClient();
+        final VaultConfig config = new VaultConfig()
+                .environmentLoader(new EmptyEnvironmentLoader())
+                .address("http://127.0.0.1:8200")
+                .token("token")
+                .httpClient(httpClient)
+                .build();
+
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (ObjectOutputStream out = new ObjectOutputStream(bytes)) {
+            out.writeObject(config);
+        }
+        final VaultConfig copy;
+        try (ObjectInputStream in = new ObjectInputStream(
+                new ByteArrayInputStream(bytes.toByteArray()))) {
+            copy = (VaultConfig) in.readObject();
+        }
+
+        assertEquals("http://127.0.0.1:8200", copy.getAddress());
+        Assert.assertNotNull(copy.getHttpClient());
+        Assert.assertNotSame(httpClient, copy.getHttpClient());
+        Assert.assertSame(copy.getHttpClient(), copy.getHttpClient());
     }
 }

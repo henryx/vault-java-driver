@@ -49,7 +49,8 @@ public class VaultConfig implements Serializable {
     private Integer globalEngineVersion;
     private String nameSpace;
     private EnvironmentLoader environmentLoader;
-    private HttpClient httpClient;
+    // HttpClient is not serializable: a deserialized config falls back to the default client
+    private transient HttpClient httpClient;
     private transient volatile HttpClient defaultHttpClient;
 
     /**
@@ -299,6 +300,9 @@ public class VaultConfig implements Serializable {
      * <p>Set a preconfigured HttpClient instance to use by REST API calls. This allows to reuse
      * http resources (connections, worker threads) between calls. If a preconfigured HttpClient is
      * specified, then sslConfig and openTimeout values passed to VaultConfig are ignored.
+     *
+     * <p>The client is not serialized: a deserialized <code>VaultConfig</code> builds its own
+     * client from sslConfig and openTimeout, unless a new one is set with this method.</p>
      *
      * @param httpClient preconfigured http client instance
      * @return VaultConfig
