@@ -634,4 +634,31 @@ public class VaultConfigTests {
         Assert.assertNotSame(unverifiedAgain, withTimeout);
         assertEquals(Duration.ofSeconds(5), withTimeout.connectTimeout().orElse(null));
     }
+
+    /**
+     * A <code>null</code> or blank address is treated as unset, so <code>VAULT_ADDR</code> is used.
+     */
+    @Test
+    public void testConfigBuilder_NullOrBlankAddressFallsBackToEnv() throws VaultException {
+        final MockEnvironmentLoader mock = new MockEnvironmentLoader();
+        mock.override("VAULT_ADDR", "http://127.0.0.1:8200");
+
+        assertEquals("http://127.0.0.1:8200",
+                new VaultConfig().environmentLoader(mock).address(null).build().getAddress());
+        assertEquals("http://127.0.0.1:8200",
+                new VaultConfig().environmentLoader(mock).address(" \n").build().getAddress());
+    }
+
+    /**
+     * A prefix path depth lower than 1 is rejected with a message stating the valid range.
+     */
+    @Test
+    public void testPrefixPathDepthBelowOneIsRejected() {
+        try {
+            new VaultConfig().prefixPath("/");
+            Assert.fail("Expected an IllegalArgumentException to be thrown");
+        } catch (IllegalArgumentException e) {
+            assertEquals("prefixPathDepth must be at least 1, was: 0", e.getMessage());
+        }
+    }
 }

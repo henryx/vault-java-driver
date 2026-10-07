@@ -159,4 +159,28 @@ public class VaultTests {
         Assert.assertEquals(403, response.getRestResponse().getStatus());
         Assert.assertEquals(0, response.getRetries());
     }
+
+    /**
+     * When the KV Engine version map cannot be generated (here, Vault denies access to
+     * <code>sys/mounts</code>), a <code>VaultException</code> with a clear message is thrown.
+     */
+    @Test
+    public void testVaultWithKVEnginePathMapAccessDenied() throws Exception {
+        final var server = VaultTestUtils.initHttpMockVault(new MockVault(403, "{}"));
+        server.start();
+        try {
+            final var vaultConfig = new VaultConfig()
+                    .address("http://127.0.0.1:8999")
+                    .token("mock_token")
+                    .build();
+            Vault.create(vaultConfig, true, 1);
+            Assert.fail("Expected a VaultException to be thrown");
+        } catch (VaultException e) {
+            Assert.assertEquals(
+                    "An Engine KV version map was not supplied, and unable to determine KV "
+                            + "Engine version. Do you have admin rights?", e.getMessage());
+        } finally {
+            VaultTestUtils.shutdownMockVault(server);
+        }
+    }
 }
