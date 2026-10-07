@@ -121,12 +121,18 @@ public class VaultConfig implements Serializable {
      * it explicitly AND no environment variable value is found, then initialization of the
      * <code>VaultConfig</code> object will fail.</p>
      *
+     * <p>A <code>null</code>, empty or blank address is treated as unset.</p>
+     *
      * @param address The Vault server base URL
      * @return This object, with address populated, ready for additional builder-pattern method
      * calls or else finalization with the build() method
      */
     public VaultConfig address(final String address) {
-        this.address = address.trim();
+        if (address == null || address.isBlank()) {
+            this.address = null;
+            return this;
+        }
+        this.address = address.strip();
         if (this.address.endsWith("/")) {
             this.address = this.address.substring(0, this.address.length() - 1);
         }
@@ -255,7 +261,8 @@ public class VaultConfig implements Serializable {
      */
     public VaultConfig prefixPathDepth(int prefixPathDepth) {
         if (prefixPathDepth < 1) {
-            throw new IllegalArgumentException("pathLength must be > 1");
+            throw new IllegalArgumentException(
+                    "prefixPathDepth must be at least 1, was: " + prefixPathDepth);
         }
 
         this.prefixPathDepth = prefixPathDepth;
