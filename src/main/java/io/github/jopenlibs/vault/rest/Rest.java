@@ -510,18 +510,18 @@ public class Rest {
             throw new RestException("No URL is set");
         }
 
-        final var baseUri = new URI(urlString);
+        var uri = new URI(urlString);
         final var params = isGetOrDelete ? parametersToQueryString() : "";
-        var query = params;
 
-        if (baseUri.getQuery() != null) {
-            query = baseUri.getQuery();
-            if (!params.isEmpty()) {
-                query = baseUri.getQuery() + "&" + params;
-            }
+        if (!params.isEmpty()) {
+            // Work on the raw (still encoded) components: parameters are already url-encoded, and
+            // the multi-argument URI constructors would encode them again (e.g. '%' to "%25")
+            final var query = uri.getRawQuery() == null ? params : uri.getRawQuery() + "&" + params;
+            uri = new URI(uri.getScheme() + "://" + uri.getRawAuthority()
+                    + (uri.getRawPath() == null ? "" : uri.getRawPath())
+                    + "?" + query
+                    + (uri.getRawFragment() == null ? "" : "#" + uri.getRawFragment()));
         }
-        final var uri = new URI(baseUri.getScheme(), baseUri.getUserInfo(), baseUri.getHost(),
-                baseUri.getPort(), baseUri.getPath(), query, baseUri.getFragment());
 
         // Initialize HTTP(S) connection, and set any header values
         final var request = HttpRequest.newBuilder()
