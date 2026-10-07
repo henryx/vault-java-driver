@@ -5,8 +5,10 @@ import java.io.Serializable;
 import java.net.http.HttpClient;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
+import javax.net.ssl.SSLContext;
 
 /**
  * <p>A container for the configuration settings needed to initialize a <code>Vault</code> driver
@@ -51,7 +53,7 @@ public class VaultConfig implements Serializable {
     private EnvironmentLoader environmentLoader;
     // HttpClient is not serializable: a deserialized config falls back to the default client
     private transient HttpClient httpClient;
-    private transient volatile HttpClient defaultHttpClient;
+    private transient volatile DefaultHttpClient defaultHttpClient;
 
     /**
      * <p>The code used to load environment variables is encapsulated here, so that a mock version
@@ -204,7 +206,6 @@ public class VaultConfig implements Serializable {
      */
     public VaultConfig sslConfig(final SslConfig sslConfig) {
         this.sslConfig = sslConfig;
-        this.defaultHttpClient = null;
         return this;
     }
 
@@ -223,7 +224,6 @@ public class VaultConfig implements Serializable {
      */
     public VaultConfig openTimeout(final Integer openTimeout) {
         this.openTimeout = openTimeout;
-        this.defaultHttpClient = null;
         return this;
     }
 
@@ -400,7 +400,6 @@ public class VaultConfig implements Serializable {
             this.sslConfig = new SslConfig();
         }
         this.sslConfig.buildIfNeeded(this.environmentLoader);
-        this.defaultHttpClient = null;
         return this;
     }
 
@@ -477,8 +476,13 @@ public class VaultConfig implements Serializable {
     /**
      * <p>Returns the HttpClient used by REST API calls: the one set with
      * {@link #httpClient(HttpClient)} if any, otherwise a client built from this config's sslConfig
-     * and openTimeout values. The latter is built once and shared by all calls, so connections and
-     * worker threads are reused.</p>
+     * and openTimeout values. The latter is shared by all calls, so connections and worker threads
+     * are reused, and is rebuilt whenever those values change (e.g. a new sslConfig, SSL
+     * verification turned on or off, or a new SSLContext from calling {@link SslConfig#build()}
+     * again).</p>
+     *
+     * <p>Certificate settings changed on the sslConfig (e.g. {@link SslConfig#pemUTF8(String)})
+     * only take effect once {@link SslConfig#build()} is called again.</p>
      *
      * @return The HttpClient used by REST API calls
      */
@@ -486,18 +490,45 @@ public class VaultConfig implements Serializable {
         if (httpClient != null) {
             return httpClient;
         }
+        final Boolean verify = sslConfig == null ? null : sslConfig.isVerify();
+        final SSLContext sslContext = sslConfig == null ? null : sslConfig.getSslContext();
         var client = defaultHttpClient;
-        if (client == null) {
+        if (client == null || !client.matches(openTimeout, verify, sslContext)) {
             synchronized (this) {
                 client = defaultHttpClient;
-                if (client == null) {
-                    client = Rest.newHttpClient(openTimeout,
-                            sslConfig == null ? null : sslConfig.isVerify(),
-                            sslConfig == null ? null : sslConfig.getSslContext());
+                if (client == null || !client.matches(openTimeout, verify, sslContext)) {
+                    client = new DefaultHttpClient(openTimeout, verify, sslContext);
                     defaultHttpClient = client;
                 }
             }
         }
-        return client;
+        return client.httpClient;
+    }
+
+    /**
+     * The default HttpClient, along with the settings it was built from.
+     */
+    private static final class DefaultHttpClient {
+
+        private final HttpClient httpClient;
+        private final Integer openTimeout;
+        private final Boolean verify;
+        private final SSLContext sslContext;
+
+        private DefaultHttpClient(final Integer openTimeout, final Boolean verify,
+                final SSLContext sslContext) {
+            this.httpClient = Rest.newHttpClient(openTimeout, verify, sslContext);
+            this.openTimeout = openTimeout;
+            this.verify = verify;
+            this.sslContext = sslContext;
+        }
+
+        private boolean matches(final Integer openTimeout, final Boolean verify,
+                final SSLContext sslContext) {
+            // SSLContext has no equals(): a new instance means new certificates
+            return Objects.equals(this.openTimeout, openTimeout)
+                    && Objects.equals(this.verify, verify)
+                    && this.sslContext == sslContext;
+        }
     }
 }

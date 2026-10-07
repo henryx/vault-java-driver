@@ -13,6 +13,7 @@ import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -592,5 +593,45 @@ public class VaultConfigTests {
         Assert.assertNotNull(copy.getHttpClient());
         Assert.assertNotSame(httpClient, copy.getHttpClient());
         Assert.assertSame(copy.getHttpClient(), copy.getHttpClient());
+    }
+
+    /**
+     * The default HttpClient is reused while its settings are unchanged, and rebuilt when the
+     * passed <code>SslConfig</code> is changed after <code>VaultConfig.build()</code>.
+     */
+    @Test
+    public void testDefaultHttpClientFollowsSslConfigChanges() throws Exception {
+        final String pem;
+        try (InputStream input = this.getClass().getResourceAsStream("/cert.pem")) {
+            pem = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        }
+        final SslConfig sslConfig = new SslConfig().verify(false);
+        final VaultConfig config = new VaultConfig()
+                .environmentLoader(new MockEnvironmentLoader())
+                .address("https://127.0.0.1:8200")
+                .sslConfig(sslConfig)
+                .build();
+
+        final HttpClient unverified = config.getHttpClient();
+        Assert.assertSame(unverified, config.getHttpClient());
+
+        // Verification turned on, with new certificates: build() creates a new SSLContext
+        sslConfig.verify(true).pemUTF8(pem).build();
+        final HttpClient withPem = config.getHttpClient();
+        Assert.assertNotSame(unverified, withPem);
+        Assert.assertSame(sslConfig.getSslContext(), withPem.sslContext());
+        Assert.assertSame(withPem, config.getHttpClient());
+
+        // Verification turned off, without calling build() again
+        sslConfig.verify(false);
+        final HttpClient unverifiedAgain = config.getHttpClient();
+        Assert.assertNotSame(withPem, unverifiedAgain);
+        Assert.assertNotSame(sslConfig.getSslContext(), unverifiedAgain.sslContext());
+
+        // A new connect timeout
+        config.openTimeout(5);
+        final HttpClient withTimeout = config.getHttpClient();
+        Assert.assertNotSame(unverifiedAgain, withTimeout);
+        assertEquals(Duration.ofSeconds(5), withTimeout.connectTimeout().orElse(null));
     }
 }
