@@ -118,19 +118,24 @@ public class VaultImpl implements Vault {
         logNameSpace();
         this.vaultConfig.setEngineVersion(globalFallbackVersion);
         if (Boolean.TRUE.equals(useSecretsEnginePathMap) && this.vaultConfig.getSecretsEnginePathMap().isEmpty()) {
+            logger.info(
+                    "No secrets Engine version map was supplied, attempting to generate one.");
+            final Map<String, String> secretsEnginePathMap;
             try {
-                logger.info(
-                        "No secrets Engine version map was supplied, attempting to generate one.");
-                final Map<String, String> secretsEnginePathMap = collectSecretEngineVersions();
-                assert secretsEnginePathMap != null;
-                this.vaultConfig.secretsEnginePathMap(secretsEnginePathMap);
-            } catch (Exception e) {
+                secretsEnginePathMap = collectSecretEngineVersions();
+            } catch (RuntimeException e) {
                 throw new VaultException(String.format(
-                        "An Engine KV version map was not supplied, and unable to determine " +
-                                "KV Engine " +
-                                "version, " + "due to exception: %s",
-                        e.getMessage() + ". Do you have admin rights?"));
+                        "An Engine KV version map was not supplied, and unable to determine KV "
+                                + "Engine version, due to exception: %s. Do you have admin rights?",
+                        e.getMessage()));
             }
+            // null if Vault could not be reached or did not answer with HTTP 200
+            if (secretsEnginePathMap == null) {
+                throw new VaultException(
+                        "An Engine KV version map was not supplied, and unable to determine KV "
+                                + "Engine version. Do you have admin rights?");
+            }
+            this.vaultConfig.secretsEnginePathMap(secretsEnginePathMap);
         }
     }
 
