@@ -208,6 +208,11 @@ To disable SSL certificate verification altogether, set `verify(false)`, or set 
 IS A REAL PRODUCTION SETTING!  However, it can be useful in a development or testing server context.
 If this value is explicitly set to `false`, then all other SSL config is basically unused.
 
+Certificate settings changed after calling `build()` only take effect once `build()` is called
+again. An `SslConfig` can be serialized together with its PEM data, but not with its JKS keystore
+and truststore: after deserialization, a JKS-based config verifies the Vault server's certificate
+against the JVM's default trusted CAs instead.
+
 #### Java Keystore (JKS) based config
 
 You can provide the driver with a JKS truststore, containing Vault's server-side certificate for
@@ -357,7 +362,10 @@ patches.
   * An `SslConfig` passed to `VaultConfig` without calling its `build()` is now built by
     `VaultConfig.build()`, and verifies SSL certificates by default. Previously it silently disabled
     verification and ignored its certificates
-  * A deserialized `SslConfig` now keeps its settings. Previously it had SSL verification disabled
+  * A deserialized `SslConfig` now keeps its settings. Previously it had SSL verification disabled.
+    An `SslConfig` serialized by an older release can still be deserialized, and verifies SSL
+    certificates unless it was serialized with `verify(false)`. This includes one built with
+    `VAULT_SSL_VERIFY=false`, since the serialized data cannot tell where that value came from
   * Each `VaultConfig` now reuses a single HTTP client, so connections are reused between requests
     instead of a new client being created for every request. `VaultConfig.getHttpClient()` now
     returns the client in use instead of `null` when none was set. The client is rebuilt when the
