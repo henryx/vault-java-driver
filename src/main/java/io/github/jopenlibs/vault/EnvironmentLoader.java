@@ -12,6 +12,9 @@ import java.nio.file.Paths;
  */
 public class EnvironmentLoader implements Serializable {
 
+    // The value computed for release 6.2.3, which declared none: keeps its serialized configs readable
+    private static final long serialVersionUID = 1109558394682383170L;
+
     /**
      * Loads an environment variable. Surrounding whitespace (e.g. a trailing newline) is removed,
      * and an empty or blank value is treated as unset.

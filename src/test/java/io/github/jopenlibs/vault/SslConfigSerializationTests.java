@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
@@ -44,6 +45,61 @@ public class SslConfigSerializationTests {
     @Test
     public void testVerifyDisabledSurvives() throws Exception {
         assertFalse(roundTrip(new SslConfig().verify(false).build()).isVerify());
+    }
+
+    /**
+     * A stream from an older release, or from a never-built instance, carries <code>verify</code>
+     * set to <code>false</code> without it being requested: verification must stay enabled.
+     */
+    @Test
+    public void testUnbuiltVerifyFalseIsNotRestored() throws Exception {
+        final var config = new SslConfig();
+        final Field verify = SslConfig.class.getDeclaredField("verify");
+        verify.setAccessible(true);
+        verify.setBoolean(config, false);
+
+        assertTrue(roundTrip(config).isVerify());
+    }
+
+    @Test
+    public void testVerifyDisabledByEnvironmentSurvives() throws Exception {
+        final var config = new SslConfig().environmentLoader(new VerifyFalseLoader()).build();
+
+        assertFalse(config.isVerify());
+        assertFalse(roundTrip(config).isVerify());
+    }
+
+    private static class VerifyFalseLoader extends EnvironmentLoader {
+
+        @Override
+        public String loadVariable(final String name) {
+            return "VAULT_SSL_VERIFY".equals(name) ? "false" : null;
+        }
+    }
+
+    /**
+     * Reads an <code>SslConfig</code> serialized by release 6.2.3.
+     */
+    private static SslConfig read623(final String name) throws Exception {
+        try (var in = new ObjectInputStream(SslConfigSerializationTests.class
+                .getResourceAsStream("/serialized-6.2.3/" + name))) {
+            return (SslConfig) in.readObject();
+        }
+    }
+
+    @Test
+    public void testRelease623UnbuiltConfigVerifies() throws Exception {
+        assertTrue(read623("sslconfig-unbuilt.ser").isVerify());
+    }
+
+    @Test
+    public void testRelease623BuiltConfigVerifies() throws Exception {
+        assertTrue(read623("sslconfig-built.ser").isVerify());
+    }
+
+    @Test
+    public void testRelease623VerifyDisabledSurvives() throws Exception {
+        assertFalse(read623("sslconfig-verify-false.ser").isVerify());
     }
 
     @Test

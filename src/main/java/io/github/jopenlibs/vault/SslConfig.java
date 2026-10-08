@@ -790,6 +790,12 @@ public class SslConfig implements Serializable {
             throws IOException, ClassNotFoundException {//NOPMD
         // Restore the serialized fields first: buildSsl() depends on them (e.g. verify, pemUTF8)
         in.defaultReadObject();
+        // Field initializers don't run on deserialization, so a stream written by an older release
+        // (which has no "built" field) or by a never-built instance may carry verify=false without
+        // it ever being requested. Unless explicitly disabled, verification stays enabled.
+        if (!built && verifyObject == null) {
+            this.verify = true;
+        }
         try {
             buildSsl();
         } catch (VaultException e) {
