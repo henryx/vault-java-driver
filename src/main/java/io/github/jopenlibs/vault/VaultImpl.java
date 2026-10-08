@@ -249,8 +249,11 @@ public class VaultImpl implements Vault {
      * Returns the implementing class for Vault's lease operations (e.g. revoke, revoke-prefix).
      *
      * @return The implementing class for Vault's lease operations (e.g. revoke, revoke-prefix).
+     *
+     * @deprecated This method is deprecated and in future it will be removed
      */
     @Override
+    @Deprecated
     public Leases leases() {
         return new Leases(vaultConfig);
     }
@@ -270,8 +273,11 @@ public class VaultImpl implements Vault {
      * <code>/v1/sys/mounts/*</code> REST endpoints).
      *
      * @return the implementing class for Vault's sys mounts operations
+     *
+     * @deprecated This method is deprecated and in future it will be removed
      */
     @Override
+    @Deprecated
     public Mounts mounts() {
         return new Mounts(vaultConfig);
     }
@@ -280,8 +286,11 @@ public class VaultImpl implements Vault {
      * Returns the implementing class for Vault's seal operations (e.g. seal, unseal, sealStatus).
      *
      * @return The implementing class for Vault's seal operations (e.g. seal, unseal, sealStatus).
+     *
+     * @deprecated This method is deprecated and in future it will be removed
      */
     @Override
+    @Deprecated
     public Seal seal() {
         return new Seal(vaultConfig);
     }

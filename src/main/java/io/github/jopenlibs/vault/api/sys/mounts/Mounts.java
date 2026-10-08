@@ -85,7 +85,7 @@ public class Mounts extends OperationsBase {
      *                                       .maxLeaseTtl(TimeToLive.of(86400, TimeUnit.SECONDS))
      *                                       .description("description for pki engine");
      *
-     * final MountResponse response = vault.mounts().enable("pki/mount/point/path", MountType.PKI, payload);
+     * final MountResponse response = vault.sys().mounts().enable("pki/mount/point/path", MountType.PKI, payload);
      *
      * assertEquals(204, response.getRestResponse().getStatus();
      * }</pre>
@@ -145,7 +145,7 @@ public class Mounts extends OperationsBase {
      * final VaultConfig config = new VaultConfig.address(...).token(...).build();
      * final Vault vault = Vault.create(config);
      *
-     * final MountResponse response = vault.mounts().disable("pki/mount/point/path");
+     * final MountResponse response = vault.sys().mounts().disable("pki/mount/point/path");
      *
      * assertEquals(204, response.getRestResponse().getStatus();
      * }</pre>
@@ -191,7 +191,7 @@ public class Mounts extends OperationsBase {
      * final VaultConfig config = new VaultConfig.address(...).token(...).build();
      * final Vault vault = Vault.create(config);
      *
-     * final MountResponse response = vault.mounts().read("pki/mount/point/path");
+     * final MountResponse response = vault.sys().mounts().read("pki/mount/point/path");
      * final Mount mount = response.getMount();
      * final MountConfig mountConfig = mount.getConfig();
      * }</pre>
@@ -245,7 +245,7 @@ public class Mounts extends OperationsBase {
      *                                   .maxLeaseTtl(TimeToLive.of(12, TimeUnit.HOURS))
      *                                   .description("description of pki");
      *
-     * final MountResponse response = vault.mounts().tune("pki/mount/point/path", configs);
+     * final MountResponse response = vault.sys().mounts().tune("pki/mount/point/path", configs);
      *
      * assertEquals(204, response.getRestResponse().getStatus();
      * }</pre>

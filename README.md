@@ -394,6 +394,16 @@ patches.
   * Warnings are logged with `java.util.logging` instead of being printed to standard error
   * Build: pinned Maven plugin versions, fixed test reports in the GitHub Actions CI, removed the
     unused Travis CI configuration. Checkstyle now runs in the build, and fails it on violations
+  * CI tests Vault 1.16 to 2.1 only: versions 1.8 to 1.15 are deprecated. `Auth.loginByAppID()` is
+    deprecated, since the App ID auth backend is not available in Vault 1.16 and later: use
+    `Auth.loginByAppRole()` instead
+  * Methods documented as deprecated are now also annotated with `@Deprecated`, so using them
+    produces a compiler warning: `Vault.leases()`, `Vault.mounts()`, `Vault.seal()`,
+    `Auth.lookupWrap()`, `Auth.unwrap()`, `Auth.wrap()` and `Auth.rewrap()`. Use their `Sys`
+    equivalents instead (e.g. `vault.sys().leases()`, `vault.sys().wrapping().unwrap()`)
+  * Javadoc examples use the `Sys` methods instead of the deprecated ones. The `Wrapping` examples
+    are fixed: they used `new Vault(config)` instead of `Vault.create(config)`, and a misspelled
+    `lookupWarp()` method
 * **6.2.3**: This release contains the following updates:
   * Improved Java 11 compatibility
   * Fixed integration tests with Vault 2.x

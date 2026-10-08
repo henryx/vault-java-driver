@@ -38,7 +38,7 @@ public class Leases extends OperationsBase {
      *
      * <blockquote>
      * <pre>{@code
-     * final VaultResponse response = vault.leases().revoke("7c63da27-a56b-3e3b-377d-ef74630a6d0b");
+     * final VaultResponse response = vault.sys().leases().revoke("7c63da27-a56b-3e3b-377d-ef74630a6d0b");
      * assertEquals(204, response.getRestResponse().getStatus());
      * }</pre>
      * </blockquote>
@@ -77,7 +77,7 @@ public class Leases extends OperationsBase {
      *
      * <blockquote>
      * <pre>{@code
-     * final VaultResponse response = vault.leases().revokePrefix("aws");
+     * final VaultResponse response = vault.sys().leases().revokePrefix("aws");
      * assertEquals(204, response.getRestResponse().getStatus());
      * }</pre>
      * </blockquote>
@@ -116,7 +116,7 @@ public class Leases extends OperationsBase {
      *
      * <blockquote>
      * <pre>{@code
-     * final VaultResponse response = vault.leases().revokePrefix("aws");
+     * final VaultResponse response = vault.sys().leases().revokePrefix("aws");
      * assertEquals(204, response.getRestResponse().getStatus());
      * }</pre>
      * </blockquote>
@@ -150,7 +150,7 @@ public class Leases extends OperationsBase {
      *
      * <blockquote>
      * <pre>{@code
-     * final VaultResponse response = vault.leases().renew("mongodb/creds/myapp/cd7f9834-b870-9ebc-3da5-27bf9cdc42ad");
+     * final VaultResponse response = vault.sys().leases().renew("mongodb/creds/myapp/cd7f9834-b870-9ebc-3da5-27bf9cdc42ad");
      * assertEquals(200, response.getRestResponse().getStatus());
      * }</pre>
      * </blockquote>
